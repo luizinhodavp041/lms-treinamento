@@ -49,3 +49,4 @@ const CourseDetailsLayout = async ({
 };
 
 export default CourseDetailsLayout;
+//cp,eeto
