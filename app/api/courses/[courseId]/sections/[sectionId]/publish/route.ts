@@ -4,9 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (
   req: NextRequest,
-  {
-    params,
-  }: { params: { courseId: string; sectionId: string; resourceId: string } }
+  { params }: { params: { courseId: string; sectionId: string } }
 ) => {
   try {
     const { userId } = auth();
@@ -15,7 +13,7 @@ export const POST = async (
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { courseId, sectionId, resourceId } = params;
+    const { courseId, sectionId } = params;
 
     const course = await db.course.findUnique({
       where: {
@@ -35,20 +33,35 @@ export const POST = async (
       },
     });
 
-    if (!section) {
-      return new NextResponse("Section Not Found", { status: 404 });
-    }
-
-    await db.resource.delete({
+    const muxData = await db.muxData.findUnique({
       where: {
-        id: resourceId,
         sectionId,
       },
     });
 
-    return NextResponse.json("Material excluído", { status: 200 });
+    if (
+      !section ||
+      !muxData ||
+      !section.title ||
+      !section.description ||
+      !section.videoUrl
+    ) {
+      return new NextResponse("Missing required fields", { status: 400 });
+    }
+
+    const publishedSection = await db.section.update({
+      where: {
+        id: sectionId,
+        courseId,
+      },
+      data: {
+        isPublished: true,
+      },
+    });
+
+    return NextResponse.json(publishedSection, { status: 200 });
   } catch (err) {
-    console.log("[resourceId_DELETE", err);
+    console.log("[section_publish_POST]", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 };

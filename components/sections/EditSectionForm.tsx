@@ -6,9 +6,10 @@ import { useForm } from "react-hook-form";
 import { MuxData, Resource, Section } from "@prisma/client";
 import Link from "next/link";
 import axios from "axios";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ArrowLeft, Loader2, Trash } from "lucide-react";
+import MuxPlayer from "@mux/mux-player-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,12 +25,13 @@ import { Input } from "@/components/ui/input";
 import RichEditor from "@/components/custom/RichEditor";
 import FileUpload from "../custom/FileUpload";
 import { Switch } from "@/components/ui/switch";
-import ResourceForm from "./ResourceForm";
-import MuxPlayer from "@mux/mux-player-react";
+import ResourceForm from "@/components/sections/ResourceForm";
+import Delete from "@/components/custom/Delete";
+import PublishButton from "@/components/custom/PublishButton";
 
 const formSchema = z.object({
   title: z.string().min(2, {
-    message: "Título é obrigatório e deve ter no mínimo 2 caracteres",
+    message: "O título é obrigatório e deve ter pelo menos 2 caracteres",
   }),
   description: z.string().optional(),
   videoUrl: z.string().optional(),
@@ -69,11 +71,11 @@ const EditSectionForm = ({
         `/api/courses/${courseId}/sections/${section.id}`,
         values
       );
-      router.refresh();
       toast.success("Módulo atualizado");
+      router.refresh();
     } catch (err) {
       console.log("Failed to update the section", err);
-      toast.error("Algo deu errado");
+      toast.error("Something went wrong!");
     }
   };
 
@@ -86,18 +88,24 @@ const EditSectionForm = ({
             Voltar aos módulos
           </Button>
         </Link>
-        <div className="flex gap-4 items-start">
-          <Button variant="outline">Publicar</Button>
-          <Button>
-            <Trash className="h-4 w-4" />
-          </Button>
+
+        <div className="flex gap-5 items-start">
+          <PublishButton
+            disabled={!isCompleted}
+            courseId={courseId}
+            sectionId={section.id}
+            isPublished={section.isPublished}
+            page="Section"
+          />
+          <Delete item="section" courseId={courseId} sectionId={section.id} />
         </div>
       </div>
 
       <h1 className="text-xl font-bold">Detalhes do módulo</h1>
       <p className="text-sm font-medium mt-2">
-        Complete essa sessão com informações detalhadas, bons vídeos e
-        materiais, para dar aos seus alunos a melhor experiência de aprendizado
+        Complete este módulo com informações detalhadas, vídeos de qualidade e
+        recursos para oferecer aos colaboradores a melhor experiência de
+        aprendizado
       </p>
 
       <Form {...form}>
@@ -107,12 +115,11 @@ const EditSectionForm = ({
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Título</FormLabel>
+                <FormLabel>
+                  Título <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Ex: Introdução à Direção Defensiva, ..."
-                    {...field}
-                  />
+                  <Input placeholder="Ex: Direção Defensiva" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -124,10 +131,12 @@ const EditSectionForm = ({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Descrição</FormLabel>
+                <FormLabel>
+                  Descrição <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <RichEditor
-                    placeholder="Sobre o que esse módulo se trata?"
+                    placeholder="Sobre o que é esse módulo"
                     {...field}
                   />
                 </FormControl>
@@ -144,13 +153,14 @@ const EditSectionForm = ({
               />
             </div>
           )}
-
           <FormField
             control={form.control}
             name="videoUrl"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Vídeo</FormLabel>
+                <FormLabel>
+                  Vídeo <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <FileUpload
                     value={field.value || ""}

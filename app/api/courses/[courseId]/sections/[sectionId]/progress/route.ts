@@ -4,23 +4,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (
   req: NextRequest,
-  {
-    params,
-  }: { params: { courseId: string; sectionId: string; resourceId: string } }
+  { params }: { params: { courseId: string; sectionId: string } }
 ) => {
   try {
     const { userId } = auth();
+    const { isCompleted } = await req.json();
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { courseId, sectionId, resourceId } = params;
+    const { courseId, sectionId } = params;
 
     const course = await db.course.findUnique({
       where: {
         id: courseId,
-        instructorId: userId,
       },
     });
 
@@ -39,16 +37,40 @@ export const POST = async (
       return new NextResponse("Section Not Found", { status: 404 });
     }
 
-    await db.resource.delete({
+    let progress = await db.progress.findUnique({
       where: {
-        id: resourceId,
-        sectionId,
+        studentId_sectionId: {
+          studentId: userId,
+          sectionId,
+        },
       },
     });
 
-    return NextResponse.json("Material excluído", { status: 200 });
+    if (progress) {
+      progress = await db.progress.update({
+        where: {
+          studentId_sectionId: {
+            studentId: userId,
+            sectionId,
+          },
+        },
+        data: {
+          isCompleted,
+        },
+      });
+    } else {
+      progress = await db.progress.create({
+        data: {
+          studentId: userId,
+          sectionId,
+          isCompleted,
+        },
+      });
+    }
+
+    return NextResponse.json(progress, { status: 200 });
   } catch (err) {
-    console.log("[resourceId_DELETE", err);
+    console.log("[sectionId_progress_POST]", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 };

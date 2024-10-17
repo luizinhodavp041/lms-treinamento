@@ -23,6 +23,8 @@ import axios from "axios";
 import { usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Trash } from "lucide-react";
+import Delete from "@/components/custom/Delete";
+import PublishButton from "../custom/PublishButton";
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -49,12 +51,14 @@ interface EditCourseFormProps {
     subCategories: { label: string; value: string }[];
   }[];
   levels: { label: string; value: string }[];
+  isCompleted: boolean;
 }
 
 const EditCourseForm = ({
   course,
   categories,
   levels,
+  isCompleted,
 }: EditCourseFormProps) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -112,10 +116,13 @@ const EditCourseForm = ({
           ))}
         </div>
         <div className="flex gap-4 items-start">
-          <Button variant="outline">Publicar</Button>
-          <Button>
-            <Trash className="h-4 w-4" />
-          </Button>
+          <PublishButton
+            disabled={!isCompleted}
+            courseId={course.id}
+            isPublished={course.isPublished}
+            page="Course"
+          />
+          <Delete item="course" courseId={course.id} />
         </div>
       </div>
       <Form {...form}>
@@ -125,7 +132,9 @@ const EditCourseForm = ({
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Título</FormLabel>
+                <FormLabel>
+                  Título <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Ex: Direção Defensiva, ..." {...field} />
                 </FormControl>
@@ -156,7 +165,9 @@ const EditCourseForm = ({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Descrição</FormLabel>
+                <FormLabel>
+                  Descrição <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <RichEditor
                     placeholder="Sobre o que esse curso se trata?"
@@ -174,7 +185,9 @@ const EditCourseForm = ({
               name="categoryId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Categoria</FormLabel>
+                  <FormLabel>
+                    Categoria <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <ComboBox options={categories} {...field} />
                   </FormControl>
@@ -188,7 +201,9 @@ const EditCourseForm = ({
               name="subCategoryId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Subcategoria</FormLabel>
+                  <FormLabel>
+                    Subcategoria <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <ComboBox
                       options={
@@ -210,7 +225,9 @@ const EditCourseForm = ({
               name="levelId"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Nível</FormLabel>
+                  <FormLabel>
+                    Nível <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
                     <ComboBox options={levels} {...field} />
                   </FormControl>
@@ -225,7 +242,9 @@ const EditCourseForm = ({
             name="imageUrl"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Imagem do curso</FormLabel>
+                <FormLabel>
+                  Imagem do curso <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <FileUpload
                     value={field.value || ""}
@@ -244,7 +263,9 @@ const EditCourseForm = ({
             name="price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Preço (R$)</FormLabel>
+                <FormLabel>
+                  Preço (R$) <span className="text-red-500">*</span>
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"

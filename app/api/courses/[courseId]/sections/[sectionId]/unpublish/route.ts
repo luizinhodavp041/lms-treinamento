@@ -4,9 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (
   req: NextRequest,
-  {
-    params,
-  }: { params: { courseId: string; sectionId: string; resourceId: string } }
+  { params }: { params: { courseId: string; sectionId: string } }
 ) => {
   try {
     const { userId } = auth();
@@ -15,7 +13,7 @@ export const POST = async (
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { courseId, sectionId, resourceId } = params;
+    const { courseId, sectionId } = params;
 
     const course = await db.course.findUnique({
       where: {
@@ -28,27 +26,38 @@ export const POST = async (
       return new NextResponse("Course Not Found", { status: 404 });
     }
 
-    const section = await db.section.findUnique({
+    const unpublishedSection = await db.section.update({
       where: {
         id: sectionId,
         courseId,
       },
-    });
-
-    if (!section) {
-      return new NextResponse("Section Not Found", { status: 404 });
-    }
-
-    await db.resource.delete({
-      where: {
-        id: resourceId,
-        sectionId,
+      data: {
+        isPublished: false,
       },
     });
 
-    return NextResponse.json("Material excluído", { status: 200 });
+    const publishedSectionsInCourse = await db.section.findMany({
+      where: {
+        courseId,
+        isPublished: true,
+      },
+    });
+
+    if (publishedSectionsInCourse.length === 0) {
+      await db.course.update({
+        where: {
+          id: courseId,
+          instructorId: userId,
+        },
+        data: {
+          isPublished: false,
+        },
+      });
+    }
+
+    return NextResponse.json(unpublishedSection, { status: 200 });
   } catch (err) {
-    console.log("[resourceId_DELETE", err);
+    console.log("[sectionId_unpublish_POST]", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 };
